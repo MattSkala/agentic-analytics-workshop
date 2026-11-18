@@ -1,0 +1,59 @@
+chartConfig:
+  config:
+    eChartsConfig:
+      series:
+        - encode:
+            xRef:
+              field: visitor_value_by_channel_first_channel
+            yRef:
+              field: visitor_value_by_channel_value_per_visitor_first_visit
+          name: First visit
+          stack: value
+          type: bar
+        - encode:
+            xRef:
+              field: visitor_value_by_channel_first_channel
+            yRef:
+              field: visitor_value_by_channel_value_per_visitor_later
+          name: Later, within 90 days
+          stack: value
+          type: bar
+    layout:
+      flipAxes: true
+      stack: stack
+      xField: visitor_value_by_channel_first_channel
+      yField:
+        - visitor_value_by_channel_value_per_visitor_first_visit
+        - visitor_value_by_channel_value_per_visitor_later
+  type: cartesian
+contentType: chart
+description: The full bar is the break-even price of acquiring one visitor, before margin.
+metricQuery:
+  dimensions:
+    - visitor_value_by_channel_first_channel
+  exploreName: visitor_value_by_channel
+  filters:
+    metrics:
+      and:
+        - operator: greaterThanOrEqual
+          target:
+            fieldId: visitor_value_by_channel_new_visitor_count
+          values:
+            - 1000
+  limit: 50
+  metrics:
+    - visitor_value_by_channel_value_per_visitor_first_visit
+    - visitor_value_by_channel_value_per_visitor_later
+    - visitor_value_by_channel_value_per_visitor_90d
+    - visitor_value_by_channel_new_visitor_count
+  sorts:
+    - descending: false
+      fieldId: visitor_value_by_channel_value_per_visitor_90d
+  tableCalculations: []
+name: What a new visitor earns, by first channel
+slug: value-by-first-channel
+spaceSlug: workshop
+tableConfig:
+  columnOrder: []
+tableName: visitor_value_by_channel
+version: 1

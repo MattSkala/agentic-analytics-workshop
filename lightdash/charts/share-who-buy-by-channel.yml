@@ -1,0 +1,44 @@
+chartConfig:
+  config:
+    eChartsConfig:
+      series:
+        - encode:
+            xRef:
+              field: visitor_value_by_channel_first_channel
+            yRef:
+              field: visitor_value_by_channel_conversion_rate_within_90_days
+          type: bar
+    layout:
+      flipAxes: true
+      xField: visitor_value_by_channel_first_channel
+      yField:
+        - visitor_value_by_channel_conversion_rate_within_90_days
+  type: cartesian
+contentType: chart
+metricQuery:
+  dimensions:
+    - visitor_value_by_channel_first_channel
+  exploreName: visitor_value_by_channel
+  filters:
+    metrics:
+      and:
+        - operator: greaterThanOrEqual
+          target:
+            fieldId: visitor_value_by_channel_new_visitor_count
+          values:
+            - 1000
+  limit: 50
+  metrics:
+    - visitor_value_by_channel_conversion_rate_within_90_days
+    - visitor_value_by_channel_new_visitor_count
+  sorts:
+    - descending: false
+      fieldId: visitor_value_by_channel_conversion_rate_within_90_days
+  tableCalculations: []
+name: Share who buy within 90 days
+slug: share-who-buy-by-channel
+spaceSlug: workshop
+tableConfig:
+  columnOrder: []
+tableName: visitor_value_by_channel
+version: 1

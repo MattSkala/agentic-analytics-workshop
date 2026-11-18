@@ -1,0 +1,119 @@
+config:
+  isAddFilterDisabled: false
+  isDateZoomDisabled: true
+contentType: dashboard
+description: What a genuinely new visitor is worth, by the channel of their first visit.
+filters:
+  dimensions:
+    - disabled: false
+      label: First visit between
+      operator: inBetween
+      required: false
+      target:
+        fieldId: visitor_value_by_channel_cohort_month_month
+        tableName: visitor_value_by_channel
+      tileTargets:
+        value-builds-up:
+          fieldId: visitor_value_curve_cohort_month_month
+          tableName: visitor_value_curve
+      values:
+        - "2016-08-01"
+        - "2017-05-31"
+name: What can we afford to pay for a new visitor?
+slug: new-visitor-value
+spaceSlug: workshop
+tabs: []
+tiles:
+  - h: 4
+    properties:
+      content: |
+        Revenue per **genuinely new** visitor, credited to the channel of the
+        first visit. Only visitors whose first-ever visit falls between
+        1 Aug 2016 and 3 May 2017 count, so everyone has a full 90 days.
+        This is revenue, not margin: multiply by your margin before bidding.
+      title: How to read this
+    type: markdown
+    w: 15
+    x: 0
+    y: 0
+  - h: 4
+    properties:
+      chartName: New visitors
+      chartSlug: new-visitors
+      hideTitle: false
+      title: New visitors
+    type: saved_chart
+    w: 7
+    x: 15
+    y: 0
+  - h: 4
+    properties:
+      chartName: 90-day value of a new visitor
+      chartSlug: value-per-new-visitor
+      hideTitle: false
+      title: 90-day value of a new visitor
+    type: saved_chart
+    w: 7
+    x: 22
+    y: 0
+  - h: 4
+    properties:
+      chartName: Buy within 90 days
+      chartSlug: buy-within-90-days
+      hideTitle: false
+      title: Buy within 90 days
+    type: saved_chart
+    w: 7
+    x: 29
+    y: 0
+  - h: 9
+    properties:
+      chartName: What a new visitor earns, by first channel
+      chartSlug: value-by-first-channel
+      hideTitle: false
+      title: What a new visitor earns, by first channel
+    type: saved_chart
+    w: 20
+    x: 0
+    y: 12
+  - h: 8
+    properties:
+      chartName: Share who buy within 90 days
+      chartSlug: share-who-buy-by-channel
+      hideTitle: false
+      title: Share who buy within 90 days
+    type: saved_chart
+    w: 16
+    x: 20
+    y: 21
+  - h: 8
+    properties:
+      chartName: By first channel
+      chartSlug: channels-table
+      hideTitle: false
+      title: By first channel
+    type: saved_chart
+    w: 20
+    x: 0
+    y: 21
+  - h: 8
+    properties:
+      chartName: Value of a new visitor, by month of first visit
+      chartSlug: value-over-time
+      hideTitle: false
+      title: Value of a new visitor, by month of first visit
+    type: saved_chart
+    w: 36
+    x: 0
+    y: 4
+  - h: 9
+    properties:
+      chartName: Value keeps arriving after the first visit
+      chartSlug: value-builds-up
+      hideTitle: false
+      title: Value keeps arriving after the first visit
+    type: saved_chart
+    w: 16
+    x: 20
+    y: 12
+version: 1

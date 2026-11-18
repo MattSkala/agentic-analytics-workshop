@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: ga360
+    description: >
+      Google Analytics 360 export of the Google Merchandise Store, 1 Aug 2016 to
+      1 Aug 2017. Real data, obfuscated by Google, and static (it never updates).
+    database: bigquery-public-data
+    schema: google_analytics_sample
+    tables:
+      - name: sessions
+        identifier: "ga_sessions_*"
+        description: One row per visit, in one table per day (366 tables).

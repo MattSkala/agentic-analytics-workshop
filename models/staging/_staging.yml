@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: stg_sessions
+    description: One row per visit to the store, with visits split at midnight merged back together.
+    columns:
+      - name: session_id
+        description: Visitor id and visit id joined with a dash.
+        data_tests: [unique, not_null]
+      - name: visitor_id
+        description: Google Analytics' pseudonymous browser id. Not a person, and not personal data.
+        data_tests: [not_null]
+      - name: visit_number
+        description: Google's own count of this visitor's visits. 1 means a genuinely new visitor.
+      - name: session_date
+        description: The store's local (Pacific) date of the visit.
+        data_tests: [not_null]
+      - name: channel
+        description: Google's default channel grouping for the visit.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [Organic Search, Social, Direct, Referral, Paid Search, Affiliates, Display, (Other)]
+      - name: revenue_usd
+        description: Transaction revenue of the visit in US dollars. Zero when nothing was bought.
+        data_tests: [not_null]

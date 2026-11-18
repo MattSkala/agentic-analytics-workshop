@@ -1,0 +1,23 @@
+chartConfig:
+  config:
+    label: Buy within 90 days
+    selectedField: visitor_value_by_channel_conversion_rate_within_90_days
+    showBigNumberLabel: true
+  type: big_number
+contentType: chart
+metricQuery:
+  dimensions: []
+  exploreName: visitor_value_by_channel
+  filters: {}
+  limit: 1
+  metrics:
+    - visitor_value_by_channel_conversion_rate_within_90_days
+  sorts: []
+  tableCalculations: []
+name: Buy within 90 days
+slug: buy-within-90-days
+spaceSlug: workshop
+tableConfig:
+  columnOrder: []
+tableName: visitor_value_by_channel
+version: 1

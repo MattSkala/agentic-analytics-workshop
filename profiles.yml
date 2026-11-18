@@ -1,0 +1,14 @@
+# Lives in the repo on purpose: no secrets here, auth comes from
+# `gcloud auth application-default login` and the project from an env var.
+agentic_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GCP_PROJECT') }}"
+      dataset: "{{ env_var('DBT_DATASET', 'agentic_analytics_playground') }}"
+      location: US # the public dataset lives in US
+      threads: 4
+      maximum_bytes_billed: 1000000000 # 1 GB hard cap per query
+      job_execution_timeout_seconds: 120

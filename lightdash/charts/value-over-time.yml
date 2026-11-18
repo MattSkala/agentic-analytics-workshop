@@ -1,0 +1,53 @@
+chartConfig:
+  config:
+    eChartsConfig:
+      series:
+        - encode:
+            xRef:
+              field: visitor_value_by_channel_cohort_month_month
+            yRef:
+              field: visitor_value_by_channel_value_per_visitor_90d
+          name: Within 90 days
+          type: line
+        - encode:
+            xRef:
+              field: visitor_value_by_channel_cohort_month_month
+            yRef:
+              field: visitor_value_by_channel_value_per_visitor_first_visit
+          name: First visit alone
+          type: line
+    layout:
+      xField: visitor_value_by_channel_cohort_month_month
+      yField:
+        - visitor_value_by_channel_value_per_visitor_90d
+        - visitor_value_by_channel_value_per_visitor_first_visit
+  type: cartesian
+contentType: chart
+description: Complete months only. May 2017 holds three days and is left out.
+metricQuery:
+  dimensions:
+    - visitor_value_by_channel_cohort_month_month
+  exploreName: visitor_value_by_channel
+  filters:
+    dimensions:
+      and:
+        - operator: equals
+          target:
+            fieldId: visitor_value_by_channel_is_complete_month
+          values:
+            - true
+  limit: 100
+  metrics:
+    - visitor_value_by_channel_value_per_visitor_90d
+    - visitor_value_by_channel_value_per_visitor_first_visit
+  sorts:
+    - descending: false
+      fieldId: visitor_value_by_channel_cohort_month_month
+  tableCalculations: []
+name: Value of a new visitor, by month of first visit
+slug: value-over-time
+spaceSlug: workshop
+tableConfig:
+  columnOrder: []
+tableName: visitor_value_by_channel
+version: 1

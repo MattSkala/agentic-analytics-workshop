@@ -1,0 +1,216 @@
+title: What can we afford to pay for a new visitor?
+
+variables:
+  first_visit:
+    label: First visit between
+    column: visitor_value_by_channel.cohort_month
+    input: daterange
+
+queries:
+  kpis:
+    sql: |
+      select
+        sum(new_visitors) as new_visitors,
+        safe_divide(sum(revenue_90d), sum(new_visitors)) as value_90d,
+        round(safe_divide(sum(revenue_90d), sum(revenue_first_visit)), 1) as times_first_visit,
+        safe_divide(sum(buyers_90d), sum(new_visitors)) as conversion_rate_90d
+      from {{ ref('visitor_value_by_channel') }}
+      where {{ filter_date_range('cohort_month', first_visit) }}
+    formats:
+      new_visitors: integer
+      value_90d: currency_full
+      conversion_rate_90d: percent
+
+  over_time:
+    notes: One row per complete first-visit month and measure. The partial last month is left out.
+    sql: |
+      select
+        cohort_month as first_visit_month,
+        'Within 90 days' as measure,
+        safe_divide(sum(revenue_90d), sum(new_visitors)) as revenue_per_new_visitor
+      from {{ ref('visitor_value_by_channel') }}
+      where is_complete_month and {{ filter_date_range('cohort_month', first_visit) }}
+      group by 1
+      union all
+      select
+        cohort_month,
+        'First visit alone',
+        safe_divide(sum(revenue_first_visit), sum(new_visitors))
+      from {{ ref('visitor_value_by_channel') }}
+      where is_complete_month and {{ filter_date_range('cohort_month', first_visit) }}
+      group by 1
+      order by 1, 2
+    formats:
+      revenue_per_new_visitor: currency_full
+
+  earned_when:
+    notes: One row per channel and part of the 90-day value; the two parts stack to the total.
+    sql: |
+      with by_channel as (
+        select
+          first_channel as channel,
+          sum(new_visitors) as visitors,
+          sum(revenue_first_visit) as first_visit_revenue,
+          sum(revenue_90d) as total_revenue
+        from {{ ref('visitor_value_by_channel') }}
+        where {{ filter_date_range('cohort_month', first_visit) }}
+        group by 1
+        having sum(new_visitors) >= 1000
+      )
+      select
+        channel,
+        'First visit' as earned,
+        first_visit_revenue / visitors as revenue_per_new_visitor,
+        total_revenue / visitors as value_90d
+      from by_channel
+      union all
+      select
+        channel,
+        'Later, within 90 days',
+        (total_revenue - first_visit_revenue) / visitors,
+        total_revenue / visitors
+      from by_channel
+      order by value_90d desc, earned
+    formats:
+      revenue_per_new_visitor: currency_full
+
+  value_curve:
+    notes: Cumulative revenue per new visitor at 0, 7, 30, 60 and 90 days, for channels worth at least $1.
+    sql: |
+      with by_channel as (
+        select
+          first_channel as channel,
+          sum(new_visitors) as new_visitors,
+          sum(revenue_first_visit) as d0,
+          sum(revenue_7d) as d7,
+          sum(revenue_30d) as d30,
+          sum(revenue_60d) as d60,
+          sum(revenue_90d) as d90
+        from {{ ref('visitor_value_by_channel') }} as v
+        where {{ filter_date_range('cohort_month', first_visit) }}
+        group by 1
+        having safe_divide(sum(v.revenue_90d), sum(v.new_visitors)) >= 1
+      )
+      select channel, 0 as days_since_first_visit, d0 / new_visitors as revenue_per_new_visitor from by_channel
+      union all select channel, 7, d7 / new_visitors from by_channel
+      union all select channel, 30, d30 / new_visitors from by_channel
+      union all select channel, 60, d60 / new_visitors from by_channel
+      union all select channel, 90, d90 / new_visitors from by_channel
+      order by 1, 2
+    formats:
+      revenue_per_new_visitor: currency_full
+
+  conversion:
+    sql: |
+      select
+        first_channel as channel,
+        safe_divide(sum(buyers_90d), sum(new_visitors)) as buy_within_90_days
+      from {{ ref('visitor_value_by_channel') }} as v
+      where {{ filter_date_range('cohort_month', first_visit) }}
+      group by 1
+      having sum(v.new_visitors) >= 1000
+      order by 2 desc
+    formats:
+      buy_within_90_days: percent
+
+  channels:
+    sql: |
+      select
+        first_channel as channel,
+        sum(new_visitors) as new_visitors,
+        safe_divide(sum(revenue_first_visit), sum(new_visitors)) as first_visit,
+        safe_divide(sum(revenue_90d), sum(new_visitors)) as within_90_days
+      from {{ ref('visitor_value_by_channel') }} as v
+      where {{ filter_date_range('cohort_month', first_visit) }}
+      group by 1
+      having sum(v.new_visitors) >= 1000
+      order by 4 desc
+    formats:
+      first_visit: currency_full
+      within_90_days: currency_full
+
+charts:
+  k_visitors:
+    type: kpi
+    query: kpis
+    value: new_visitors
+    label: New visitors
+  k_value:
+    type: kpi
+    query: kpis
+    value: value_90d
+    label: 90-day value each
+  k_times:
+    type: kpi
+    query: kpis
+    value: times_first_visit
+    label: Times first visit
+  k_conversion:
+    type: kpi
+    query: kpis
+    value: conversion_rate_90d
+    label: Buy within 90 days
+  conversion:
+    type: bar
+    title: Share who buy within 90 days
+    query: conversion
+    x: channel
+    y: buy_within_90_days
+  over_time:
+    type: line
+    title: Value of a new visitor, by month of first visit
+    subtitle: Complete months only; May 2017 holds three days and is left out
+    query: over_time
+    x: first_visit_month
+    y: revenue_per_new_visitor
+    color: measure
+    style:
+      endpoint_labels:
+        visible: false
+  earned_when:
+    type: bar
+    title: What a new visitor earns, by first channel
+    subtitle: The full bar is the break-even price of acquiring one
+    query: earned_when
+    x: channel
+    y: revenue_per_new_visitor
+    color: earned
+    style:
+      stack: zero
+  value_curve:
+    type: line
+    title: Value keeps arriving after the first visit
+    subtitle: Day 0 is the first visit alone
+    query: value_curve
+    x: days_since_first_visit
+    y: revenue_per_new_visitor
+    color: channel
+    style:
+      endpoint_labels:
+        visible: false
+  channels:
+    type: table
+    title: By first channel
+    query: channels
+
+rows:
+  - cols:
+      - width: 50%
+        text: |
+          Revenue per **genuinely new** visitor, credited to the channel of the
+          first visit. Only visitors whose first-ever visit falls between
+          1 Aug 2016 and 3 May 2017 count, so everyone has a full 90 days.
+          This is revenue, not margin: multiply by your margin before bidding.
+      - width: 50%
+        cols: [k_visitors, k_value, k_times, k_conversion]
+  - over_time
+  - cols:
+      - width: 55%
+        rows: [earned_when]
+      - width: 45%
+        rows: [value_curve]
+  - cols:
+      - width: 55%
+        rows: [channels]
+      - width: 45%
+        rows: [conversion]

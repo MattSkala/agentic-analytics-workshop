@@ -1,0 +1,102 @@
+chartConfig:
+  config:
+    eChartsConfig:
+      legend:
+        show: true
+      series:
+        - encode:
+            xRef:
+              field: visitor_value_curve_days_since_first_visit
+            yRef:
+              field: visitor_value_curve_value_per_visitor_to_date
+              pivotValues:
+                - field: visitor_value_curve_first_channel
+                  value: Referral
+          name: Referral
+          showSymbol: true
+          type: line
+        - encode:
+            xRef:
+              field: visitor_value_curve_days_since_first_visit
+            yRef:
+              field: visitor_value_curve_value_per_visitor_to_date
+              pivotValues:
+                - field: visitor_value_curve_first_channel
+                  value: Display
+          name: Display
+          showSymbol: true
+          type: line
+        - encode:
+            xRef:
+              field: visitor_value_curve_days_since_first_visit
+            yRef:
+              field: visitor_value_curve_value_per_visitor_to_date
+              pivotValues:
+                - field: visitor_value_curve_first_channel
+                  value: Direct
+          name: Direct
+          showSymbol: true
+          type: line
+        - encode:
+            xRef:
+              field: visitor_value_curve_days_since_first_visit
+            yRef:
+              field: visitor_value_curve_value_per_visitor_to_date
+              pivotValues:
+                - field: visitor_value_curve_first_channel
+                  value: Paid Search
+          name: Paid Search
+          showSymbol: true
+          type: line
+        - encode:
+            xRef:
+              field: visitor_value_curve_days_since_first_visit
+            yRef:
+              field: visitor_value_curve_value_per_visitor_to_date
+              pivotValues:
+                - field: visitor_value_curve_first_channel
+                  value: Organic Search
+          name: Organic Search
+          showSymbol: true
+          type: line
+    layout:
+      xField: visitor_value_curve_days_since_first_visit
+      yField:
+        - visitor_value_curve_value_per_visitor_to_date
+  type: cartesian
+contentType: chart
+description: Day 0 is the first visit alone. Channels worth at least $1 per new visitor over 90 days.
+metricQuery:
+  dimensions:
+    - visitor_value_curve_days_since_first_visit
+    - visitor_value_curve_first_channel
+  exploreName: visitor_value_curve
+  filters:
+    dimensions:
+      and:
+        - operator: equals
+          target:
+            fieldId: visitor_value_curve_first_channel
+          values:
+            - Referral
+            - Display
+            - Direct
+            - Paid Search
+            - Organic Search
+  limit: 100
+  metrics:
+    - visitor_value_curve_value_per_visitor_to_date
+  sorts:
+    - descending: false
+      fieldId: visitor_value_curve_days_since_first_visit
+  tableCalculations: []
+name: Value keeps arriving after the first visit
+pivotConfig:
+  columns:
+    - visitor_value_curve_first_channel
+slug: value-builds-up
+spaceSlug: workshop
+tableConfig:
+  columnOrder: []
+tableName: visitor_value_curve
+version: 1

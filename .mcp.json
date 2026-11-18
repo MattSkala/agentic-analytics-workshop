@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "dbt-charts": {
+      "command": "uv",
+      "args": ["run", "dct", "mcp", "serve"]
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "env": {
+    "DO_NOT_TRACK": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(uv run dbt *)",
+      "Bash(uv run dct *)",
+      "Bash(bq query --use_legacy_sql=false --dry_run *)",
+      "Bash(bq ls *)",
+      "Bash(bq show *)"
+    ],
+    "deny": [
+      "Bash(bq rm *)",
+      "Bash(bq mk *)",
+      "Bash(bq load *)",
+      "Bash(bq cp *)",
+      "Bash(bq update *)"
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+chartConfig:
+  config:
+    label: 90-day value of a new visitor
+    selectedField: visitor_value_by_channel_value_per_visitor_90d
+    showBigNumberLabel: true
+  type: big_number
+contentType: chart
+metricQuery:
+  dimensions: []
+  exploreName: visitor_value_by_channel
+  filters: {}
+  limit: 1
+  metrics:
+    - visitor_value_by_channel_value_per_visitor_90d
+  sorts: []
+  tableCalculations: []
+name: 90-day value of a new visitor
+slug: value-per-new-visitor
+spaceSlug: workshop
+tableConfig:
+  columnOrder: []
+tableName: visitor_value_by_channel
+version: 1

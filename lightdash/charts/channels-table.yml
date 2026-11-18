@@ -1,0 +1,40 @@
+chartConfig:
+  config:
+    hideRowNumbers: true
+    showColumnCalculation: false
+  type: table
+contentType: chart
+metricQuery:
+  dimensions:
+    - visitor_value_by_channel_first_channel
+  exploreName: visitor_value_by_channel
+  filters:
+    metrics:
+      and:
+        - operator: greaterThanOrEqual
+          target:
+            fieldId: visitor_value_by_channel_new_visitor_count
+          values:
+            - 1000
+  limit: 50
+  metrics:
+    - visitor_value_by_channel_new_visitor_count
+    - visitor_value_by_channel_value_per_visitor_first_visit
+    - visitor_value_by_channel_value_per_visitor_90d
+    - visitor_value_by_channel_conversion_rate_within_90_days
+  sorts:
+    - descending: true
+      fieldId: visitor_value_by_channel_value_per_visitor_90d
+  tableCalculations: []
+name: By first channel
+slug: channels-table
+spaceSlug: workshop
+tableConfig:
+  columnOrder:
+    - visitor_value_by_channel_first_channel
+    - visitor_value_by_channel_new_visitor_count
+    - visitor_value_by_channel_value_per_visitor_first_visit
+    - visitor_value_by_channel_value_per_visitor_90d
+    - visitor_value_by_channel_conversion_rate_within_90_days
+tableName: visitor_value_by_channel
+version: 1

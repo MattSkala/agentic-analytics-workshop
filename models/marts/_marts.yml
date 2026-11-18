@@ -1,0 +1,187 @@
+version: 2
+
+models:
+  - name: dim_visitors
+    description: One row per visitor, with first-touch channel and revenue in the days after the first visit.
+    columns:
+      - name: visitor_id
+        data_tests: [unique, not_null]
+      - name: first_channel
+        description: Channel of the first visit. All later revenue is credited to it (first-touch attribution).
+        data_tests: [not_null]
+      - name: is_new_visitor
+        description: True when the first visit we see is the visitor's first ever. False for people acquired before 1 Aug 2016.
+      - name: is_mature_90d
+        description: True when the first visit is at least 90 days before the end of the data (on or before 3 May 2017).
+      - name: revenue_90d
+        description: Revenue in US dollars from all visits in the 90 days starting at the first visit.
+
+  - name: visitor_value_by_channel
+    description: What a genuinely new visitor is worth, by first channel and cohort month. Mature visitors only.
+    config:
+      # Lightdash semantic layer (optional step in WORKSHOP.md). The metrics
+      # divide sums by sums, so they stay correct at any grouping; the
+      # per-row ratio columns below are hidden so nobody can average them.
+      meta:
+        label: New visitor value
+        metrics:
+          new_visitor_count:
+            type: sum
+            sql: ${TABLE}.new_visitors
+            label: New visitors
+            description: Genuinely new visitors with a full 90 days of history.
+          first_visit_revenue:
+            type: sum
+            sql: ${TABLE}.revenue_first_visit
+            hidden: true
+          revenue_within_90_days:
+            type: sum
+            sql: ${TABLE}.revenue_90d
+            hidden: true
+          buyer_count:
+            type: sum
+            sql: ${TABLE}.buyers_90d
+            hidden: true
+          value_per_visitor_first_visit:
+            type: number
+            sql: SAFE_DIVIDE(${first_visit_revenue}, ${new_visitor_count})
+            label: First visit
+            description: Revenue per new visitor from the first visit alone.
+            format: usd
+            round: 2
+          value_per_visitor_later:
+            type: number
+            sql: SAFE_DIVIDE(${revenue_within_90_days} - ${first_visit_revenue}, ${new_visitor_count})
+            label: Later, within 90 days
+            description: Revenue per new visitor from visits after the first, within 90 days.
+            format: usd
+            round: 2
+          value_per_visitor_90d:
+            type: number
+            sql: SAFE_DIVIDE(${revenue_within_90_days}, ${new_visitor_count})
+            label: 90-day value
+            description: Revenue per new visitor over 90 days. The break-even price of acquiring one, before margin.
+            format: usd
+            round: 2
+          conversion_rate_within_90_days:
+            type: number
+            sql: SAFE_DIVIDE(${buyer_count}, ${new_visitor_count})
+            label: Buy within 90 days
+            description: Share of new visitors who place at least one order within 90 days.
+            format: percent
+            round: 2
+    columns:
+      - name: channel_month_key
+        data_tests: [unique, not_null]
+        config:
+          meta:
+            dimension:
+              hidden: true
+      - name: first_channel
+        description: Channel of the visitor's first visit.
+        config:
+          meta:
+            dimension:
+              label: First channel
+      - name: cohort_month
+        description: Month of the visitor's first visit.
+        config:
+          meta:
+            dimension:
+              label: Cohort month
+              type: date
+              time_intervals: [MONTH, QUARTER]
+      - name: is_complete_month
+        description: False when only part of the month is inside the 90-day window (May 2017 holds 1 to 3 May only). Charts over time leave such months out.
+        config:
+          meta:
+            dimension:
+              label: Complete month
+              type: boolean
+      - name: new_visitors
+        description: New visitors with a full 90 days of history.
+        config:
+          meta:
+            dimension:
+              hidden: true
+      - name: value_first_visit
+        description: Revenue per new visitor from the first visit alone, in US dollars.
+        config:
+          meta:
+            dimension:
+              hidden: true
+      - name: value_90d
+        description: Revenue per new visitor over 90 days, in US dollars. The break-even price of acquiring one, before margin.
+        config:
+          meta:
+            dimension:
+              hidden: true
+      - name: conversion_rate_90d
+        description: Share of new visitors who place at least one order within 90 days of their first visit, as a fraction of 1.
+        data_tests: [not_null]
+        config:
+          meta:
+            dimension:
+              hidden: true
+
+  - name: visitor_value_curve
+    description: How the value of a new visitor builds up over 90 days, by first channel and cohort month. One row per number of days since the first visit (0, 7, 30, 60, 90).
+    config:
+      meta:
+        label: New visitor value over 90 days
+        metrics:
+          curve_visitors:
+            type: sum
+            sql: ${TABLE}.new_visitors
+            hidden: true
+          curve_revenue:
+            type: sum
+            sql: ${TABLE}.cumulative_revenue
+            hidden: true
+          value_per_visitor_to_date:
+            type: number
+            sql: SAFE_DIVIDE(${curve_revenue}, ${curve_visitors})
+            label: Revenue per new visitor so far
+            description: Cumulative revenue per new visitor up to that many days after the first visit. Always group by days since first visit.
+            format: usd
+            round: 2
+    columns:
+      - name: curve_key
+        data_tests: [unique, not_null]
+        config:
+          meta:
+            dimension:
+              hidden: true
+      - name: first_channel
+        description: Channel of the visitor's first visit.
+        config:
+          meta:
+            dimension:
+              label: First channel
+      - name: cohort_month
+        description: Month of the visitor's first visit.
+        config:
+          meta:
+            dimension:
+              label: Cohort month
+              type: date
+              time_intervals: [MONTH, QUARTER]
+      - name: days_since_first_visit
+        description: 0 for the first visit alone, then 7, 30, 60 and 90 days after it.
+        config:
+          meta:
+            dimension:
+              label: Days since first visit
+              type: number
+      - name: new_visitors
+        description: New visitors in this channel and month. Repeated on each of the five rows, so never sum it across days.
+        config:
+          meta:
+            dimension:
+              hidden: true
+      - name: cumulative_revenue
+        description: Revenue in US dollars from those visitors up to that many days after the first visit.
+        config:
+          meta:
+            dimension:
+              hidden: true

@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+target/
+logs/
+dbt_packages/
+renders/
+*.duckdb
+# Project settings and skills are part of the workshop: keep them tracked even
+# where a personal global ignore hides .claude. Local overrides stay out.
+!.claude/
+.claude/settings.local.json

@@ -17,19 +17,23 @@ changes, so your numbers should match the ones below exactly.
 | 0 | [Setup](#0-setup-before-the-workshop) | before | — |
 | 1 | [Meet Claude Code](#1-meet-claude-code-9-min) | 9 min | CLI, permissions, `AGENTS.md` |
 | 2 | [Analysis](#2-analysis-11-min) | 11 min | CLI tools, checking the answer |
-| 3 | [Engineering](#3-engineering-13-min) | 13 min | Plan mode, verification loop |
+| 3 | [Engineering](#3-engineering-9-min) | 9 min | Plan mode |
 | 4 | [A dashboard in minutes](#4-a-dashboard-in-minutes-4-min) | 4 min | Claude Dashboards |
 | 5 | [A dashboard as code](#5-a-dashboard-as-code-7-min) | 7 min | Shipped skills, MCP |
 | 6 | [Your own skill](#6-your-own-skill-5-min) | 5 min | Skills |
 | 7 | [Take it to Fabric and Power BI](#7-take-it-to-fabric-and-power-bi-6-min) | 6 min | — |
 | 8 | [Optional: a third dashboard in Lightdash](#8-optional-a-third-dashboard-in-lightdash-10-min) | 10 min | Vendor skills, semantic layer |
 
-With five minutes of framing at the start, steps 1 to 7 fill one hour. Step 8
-is for when there is time left, or for home.
+With five minutes of framing at the start, steps 1 to 7 take just under an
+hour. Step 8 is for when there is time left, or for home.
 
-Each step has a **prompt** to paste, **what you should see**, the **point** of
-the step, and a **fallback**: the finished file in this repo, to open if the
-live run stalls.
+Each step has a **prompt**, **what you should see**, the **point** of the
+step, and a **fallback**: the finished file in this repo, to open if the live
+run stalls.
+
+The prompts are short on purpose, so you can type them. Claude fills the gaps
+from `AGENTS.md` and from what it finds, so the layout of a dashboard or the
+wording of a file will differ from run to run. The numbers will not.
 
 ---
 
@@ -67,25 +71,33 @@ git clone https://github.com/MattSkala/agentic-analytics-workshop.git
 cd agentic-analytics-workshop
 uv sync
 uv run dbt debug          # expect: All checks passed!
-uv run dbt build          # expect: PASS=18 WARN=0 ERROR=0
+uv run dbt build          # expect: PASS=19 WARN=0 ERROR=0
 uv run dct serve          # opens the board in your browser
 ```
 
 **B. Rebuild it from scratch** (what the live workshop does): make an empty
-folder and copy only the three setup files into it.
+folder and copy only the two dependency files into it.
 
 ```bash
 mkdir my-run && cd my-run
-cp ../agentic-analytics-workshop/{pyproject.toml,uv.lock,profiles.yml} .
+cp ../agentic-analytics-workshop/{pyproject.toml,uv.lock} .
 uv sync
 claude
 ```
 
-Everything else in this repo is what Claude produces in steps 1 to 6. Keep the
-clone open next to you to compare.
+Those two files pin dbt and dbt Charts to the versions this guide was tested
+on, and `uv sync` downloads them now instead of in the middle of step 3.
+Everything else in this repo, the dbt configuration included, is what Claude
+produces in steps 1 to 6. Keep the clone open next to you to compare.
 
-Sharing one Google Cloud project with other attendees? Give yourself a private
-dataset: `export DBT_DATASET=playground_yourname`.
+With time to spare you can skip the copy as well: start in an empty folder and
+begin the step 3 prompt with "Set up a uv project with dbt-bigquery first."
+Expect newer versions, and output that differs from this guide in places.
+
+Sharing one Google Cloud project with other attendees, or rebuilding next to
+dashboards that read the finished project's tables? Give the rebuild its own
+dataset, or it overwrites those tables with whatever columns Claude chooses:
+`export DBT_DATASET=playground_yourname`.
 
 ---
 
@@ -94,15 +106,14 @@ dataset: `export DBT_DATASET=playground_yourname`.
 ### 1.1 Start it and let it look around
 
 ```
-Explore bigquery-public-data.google_analytics_sample with the bq CLI. It has
-one table per day, named ga_sessions_YYYYMMDD. Tell me the date range, how
-many visits and visitors there are, total revenue, and which columns matter
-for marketing analysis. Dry-run every query first and tell me the bytes. Never
-select the hits column.
+Explore bigquery-public-data.google_analytics_sample with bq. What is in it:
+dates, visits, visitors, revenue? Dry-run every query first and never select
+the hits column.
 ```
 
-**What you should see.** Claude asks permission before its first `bq` command.
-It reports 366 daily tables from 1 August 2016 to 1 August 2017, 903,653 visit
+**What you should see.** In auto mode, the default in recent versions, Claude
+runs the `bq` commands without asking. In manual mode it asks before the first
+one. Either way it reports 366 daily tables from 1 August 2016 to 1 August 2017, 903,653 visit
 rows, 714,167 visitors and $1,540,071 of revenue, with revenue stored in
 millionths of a dollar. Each query scans 30 to 40 MB and takes about ten
 seconds, because it opens all 366 tables.
@@ -111,49 +122,60 @@ seconds, because it opens all 366 tables.
 you would. Nothing was configured for BigQuery: `bq` was already installed, so
 Claude used it.
 
-**Try the permission modes.** Press `Shift+Tab` to cycle between asking before
-every action, auto-accepting file edits, and plan mode (read-only until you
-approve a plan).
+**Check your permission mode.** `Shift+Tab` cycles through the modes. Manual
+asks before every action. Auto lets Claude run routine actions on its own and
+stops the ones a built-in check considers risky. Plan mode is read-only until
+you approve a plan.
+
+If nobody approved those queries one by one, the rules have to live somewhere
+else. The next two steps write them down.
 
 ### 1.2 Write down what it learned
 
 ```
-Write an AGENTS.md for this folder with what you just learned: how to query the
-dataset, the cost rules I gave you, and notes on the columns.
+Write what you learned and my two cost rules into AGENTS.md.
 ```
 
-Then add what the data cannot tell it. Type this yourself or paste it:
+**What you should see.** A short file: the `bq` commands, the two cost rules
+(dry-run first, never select `hits`) and notes on the data, such as revenue
+being stored in millionths of a dollar. Open it and read it.
 
-```
-Add these business definitions to AGENTS.md:
-- Our question is about acquisition: what a new visitor is worth.
-- A visitor's revenue is credited to the channel of their first visit.
-- The value window is 90 days from the first visit. It is revenue, not margin.
-```
-
-**The point.** `AGENTS.md` is loaded into every session in this folder. It is
-where your team's definitions and rules live, so you say them once. Nothing in
-the tables says which channel should get the credit; that is a decision.
+**The point.** `AGENTS.md` is loaded into every session in this folder, so you
+say things once. At this point it holds how to work here: facts the agent found
+and rules you gave it. It says nothing yet about what the numbers should mean
+for the business. That is on purpose. We add it in step 2.3, after seeing what
+happens without it.
 
 `AGENTS.md` is the name other coding agents read too, so one file serves
 whichever agent your team uses. Claude Code loads it on its own (checked on
 version 2.1.326) and also reads the older name, `CLAUDE.md`.
 
-**Fallback:** [`AGENTS.md`](AGENTS.md)
+**Fallback:** the "Commands", "Querying BigQuery" and "Known data quirks"
+sections of [`AGENTS.md`](AGENTS.md). Leave "Business definitions" out for now,
+or step 2 has nothing left to find.
 
-### 1.3 Make the safe things frictionless
+### 1.3 Set limits that do not depend on judgement
 
 Copy [`.claude/settings.json`](.claude/settings.json) into your folder (create
 the `.claude` directory first), then restart `claude`.
 
-**What you should see.** Dry runs, `dbt` and `dct` commands no longer ask for
-permission. Real `bq query` runs still do, and `bq rm`, `bq mk` and similar are
-refused outright.
+**What you should see.** `bq rm`, `bq mk`, `bq load`, `bq cp` and `bq update`
+are refused in every permission mode. To see it without risk, ask for a table
+that does not exist:
 
-**The point.** Free, read-only actions are pre-approved; anything that costs
-money or changes data still needs you. Treat this file as a seatbelt. The real
-guardrails are a read-only role in the warehouse and the 1 GB cap per query in
-[`profiles.yml`](profiles.yml).
+```
+Run: bq rm -f -t agentic_analytics_playground.no_such_table
+```
+
+In manual mode you will also notice that dry runs, `dbt` and `dct` commands no
+longer ask. In auto mode they did not ask before either.
+
+**The point.** Auto mode is a judgement about each action, and it is usually
+right. A deny list is a rule: it does not depend on anyone's judgement, the
+model's or yours on a tired afternoon. The faster the agent is allowed to work,
+the more these fixed limits matter. Even so, treat this file as a seatbelt. The
+real guardrails are a read-only role in the warehouse and a 1 GB cap per
+query, which goes into the dbt profile in step 3.
 
 ---
 
@@ -162,8 +184,8 @@ guardrails are a read-only role in the warehouse and the 1 GB cap per query in
 ### 2.1 Ask the question the way a stakeholder would
 
 ```
-What is a visit worth, by channel? I want to know how much we can afford to
-pay per visit in each channel.
+What is a visit worth, by channel? I want to know what we can afford to pay
+for one.
 ```
 
 **What you should see.**
@@ -183,20 +205,24 @@ paid search one.
 ### 2.2 Challenge it
 
 ```
-I will use this to decide what to pay to acquire a new visitor. What is wrong
-with using revenue per visit for that? Fix it and show me both versions side
-by side.
+I will use this to buy new visitors. Credit revenue to the channel of the
+first visit and give every visitor the same 90 days. What is wrong with
+revenue per visit? Fix it and show both side by side.
 ```
 
-**What you should see.** Claude finds three problems and corrects each:
+The two decisions in that prompt are yours, not the agent's: which channel
+gets the credit, and how long the window is. Nothing in the tables says so.
+
+**What you should see.** Claude explains three problems and corrects each. The
+first follows from what you asked. The other two it has to find in the data:
 
 - **Visits are not people.** Loyal customers return many times and inflate
   the average. Follow each person from their first visit instead.
 - **Not everyone is new.** 1.8% of visitors were already customers before the
   data starts, and they bring 17% of the revenue. A new visitor is one whose
   first visit carries visit number 1.
-- **Not everyone has had time.** Give every visitor the same 90 days, and
-  count only those first seen by 3 May 2017.
+- **Not everyone has had time.** A visitor who arrived last week cannot have
+  90 days of revenue yet. Count only those first seen by 3 May 2017.
 
 | First channel | Revenue per visit | Per new visitor, first visit | Per new visitor, 90 days |
 |---|---|---|---|
@@ -221,66 +247,90 @@ questioning the result.
 ### 2.3 Make the lesson permanent
 
 ```
-Add what we just learned to AGENTS.md: the definition of a new visitor and a
-maturity rule for any value measured over a time window.
+Add what we just decided and learned to AGENTS.md as business definitions.
 ```
+
+**What you should see.** A new section with four things: what a new visitor
+is, that revenue is credited to the channel of the first visit, that value is
+revenue in the 90 days from the first visit, and a rule that only visitors who
+have had their 90 days are counted. If one is missing, ask for it. Add "it is
+revenue, not margin" yourself if Claude left it out.
+
+**The point.** Two kinds of knowledge go into the file. Some the agent found
+in the data: who is really new, and who has had their 90 days. Some only you
+could decide: which channel gets the credit, and how long the window is. Both
+would be gone tomorrow if they stayed in this conversation.
 
 **Fallback:** the "Business definitions" section of [`AGENTS.md`](AGENTS.md),
 and [`analyses/channel_value_exploration.sql`](analyses/channel_value_exploration.sql).
 
+### 2.4 Check that it stuck
+
+Start a fresh conversation, so nothing from the last twenty minutes is left:
+
+```
+/clear
+```
+
+Then ask the question from step 2.1 again, without running anything:
+
+```
+Don't run anything yet. How would you work out what a visit is worth, by
+channel?
+```
+
+**What you should see.** This time Claude describes the right method without
+being challenged: new visitors only, revenue credited to the first channel,
+90 days, and only visitors who have had that long.
+
+**The point.** Same question as step 2.1, a different answer, and the only
+thing that changed is a file. That is what `AGENTS.md` is for.
+
 ---
 
-## 3. Engineering (13 min)
-
-### 3.1 Plan before building
+## 3. Engineering (9 min)
 
 Press `Shift+Tab` until you are in plan mode, then:
 
 ```
-Turn this analysis into a dbt project. Staging: one row per visit from the
-daily tables, built as a table so we stop paying to open 366 tables. Marts:
-dim_visitors (one row per visitor with first channel and revenue at the first
-visit and within 7, 30, 60 and 90 days) and visitor_value_by_channel (by first
-channel and month, new and mature visitors only). Follow AGENTS.md. Add tests
-for keys, missing values and the list of channels.
+Turn this analysis into a dbt project with tests. I want dim_visitors (one
+row per visitor) and visitor_value_by_channel (by first channel and month).
 ```
 
-Read the plan, push back on anything you disagree with, then approve it.
+Read the plan. It will already follow `AGENTS.md`: new visitors only, first
+channel, 90 days. Then steer it, one short line at a time. These two are worth
+typing whatever the plan says, because later steps rely on them:
+
+```
+Build staging as a table, and keep revenue at the first visit and after 7,
+30, 60 and 90 days.
+```
+
+```
+Read the project id from GCP_PROJECT, use the dataset
+agentic_analytics_playground and cap every query at 1 GB.
+```
+
+Push back on anything else you disagree with, then approve it. Claude then
+writes the files, builds the models and runs the tests.
+
+**What you should see.** The plan lists `dbt_project.yml` and `profiles.yml`
+next to the models. After you approve, `uv run dbt debug` ends with
+`All checks passed!` and the build ends with `WARN=0 ERROR=0`. The number
+after `PASS=` depends on how many tests Claude chose to write.
+
+Two things to check yourself. Open `profiles.yml`: the project id must not be
+written in it, only the name of the environment variable. And ask for the
+totals of the new mart: they should repeat step 2, with 554,755 new visitors
+worth $1.66 each over 90 days.
 
 **The point.** Plan mode is where you review the design. It is far cheaper to
-correct a plan than a finished set of models.
+correct a plan than a finished set of models. Notice how short the first
+prompt could be: the definitions are in `AGENTS.md`, so you only had to say
+what you want built.
 
-### 3.2 Build and let a test fail
-
-```
-Run the build and all the tests.
-```
-
-**What you should see.** The models build, and one test fails: the uniqueness
-test on the visit key finds **898 visits that appear twice**.
-
-### 3.3 Investigate; do not just make it green
-
-```
-Don't change the test yet. Investigate what is going on, tell me what you
-found, and recommend what to do.
-```
-
-**What you should see.** Claude finds that a visit which crosses midnight in
-the store's time zone is exported into both days' tables under the same id.
-The two halves are different parts of the same visit, and 37 of them carry
-revenue. The right fix is to merge the halves and add their revenue. Deleting
-one half, or using `select distinct`, would pass the test and lose money.
-
-After the fix there are 902,755 visits, revenue is unchanged at $1,540,071,
-and the build prints `PASS=14 WARN=0 ERROR=0`.
-
-**The point.** An agent that is told "make the build pass" can do so by
-deleting the test or the rows. `AGENTS.md` in this repo says a failing test is
-a finding to report. That one line is what makes the agent trustworthy here.
-
-**Fallback:** [`models/`](models), especially the comment at the top of
-[`models/staging/stg_sessions.sql`](models/staging/stg_sessions.sql)
+**Fallback:** [`profiles.yml`](profiles.yml),
+[`dbt_project.yml`](dbt_project.yml) and [`models/`](models)
 
 ---
 
@@ -292,17 +342,17 @@ Dashboards, in beta on paid plans. On Enterprise an admin has to switch it on
 under Organization settings > Artifacts.
 
 ```
-Build a dashboard of what a new visitor is worth by first channel, from the
-visitor_value_by_channel table. Show the 90-day value, how much of it arrives
-after the first visit, how it builds up over the 90 days, the share who buy,
-and how the value changes by month of first visit. Add a date range control
-for the month of first visit.
+Build a Claude Dashboard of what a new visitor is worth by first channel,
+with a date range filter.
 ```
 
+Say "Claude Dashboard" by name. dbt Charts is installed in this folder, and a
+plain "build a dashboard" can send Claude there.
+
 **What you should see.** Claude creates the dashboard and gives you a link.
-The page has headline numbers, a line by month of first visit, a chart by
-channel, a line per channel showing value building up over 90 days, and a
-table, with two month pickers that narrow every figure at once.
+Expect headline numbers, a chart by channel, a table and a date filter that
+narrows every figure at once. Claude chooses the rest, so ask for what you
+miss, for example "add a line showing how the value builds up over 90 days".
 Open Sources beside the page to see the query and the calculation behind each
 figure.
 
@@ -339,13 +389,9 @@ taught your agent how to use it.
 ### 5.2 Build the board
 
 ```
-Build a dbt Charts board that answers "What can we afford to pay for a new
-visitor?". Include headline numbers, a line of the value by month of first
-visit, a bar per first channel that splits the 90-day value into the first
-visit and later visits, a line showing how value builds up over the 90 days,
-and a table. Add a date range control that filters everything by month of
-first visit. Read from the dbt marts. Render it to PNG and check it yourself
-before you show me.
+Build a dbt Charts board in charts/channel_value.yml that answers "What can
+we afford to pay for a new visitor?". Add a date range filter. Render it and
+check it yourself before you show me.
 ```
 
 Then look at it:
@@ -354,8 +400,17 @@ Then look at it:
 uv run dct serve
 ```
 
-**What you should see.** A board like [`docs/board.png`](docs/board.png), with
-a "First visit between" control at the top. Try it from the terminal too:
+**What you should see.** A board in the spirit of
+[`docs/board.png`](docs/board.png), with a date control at the top. Claude
+chooses the charts, so yours will differ. The reference board has headline
+numbers, a line by month of first visit, a bar per channel split into first
+visit and later, a line of value building up over 90 days, and a table. Ask
+for whichever of those you miss, one at a time, for example "add a line of
+the value by month of first visit".
+
+Try the filter from the terminal too. The variable is called `first_visit` in
+the reference board; yours may have another name, so check the top of the
+file:
 
 ```bash
 uv run dct render charts/channel_value.yml --format text \
@@ -422,8 +477,8 @@ Copy the `add-metric` folder into your `.claude/skills/`, then:
 **What you should see.** Claude prototypes the number (1.22% overall, from
 6.32% for Referral down to 0.03% for Social), adds `buyers_90d` and
 `conversion_rate_90d` to the mart with a test, adds a headline number and a
-chart, rebuilds and re-renders. The build now prints `PASS=15`. (The finished
-repo prints `PASS=18`: step 8 adds one more model with two tests.)
+chart, rebuilds and re-renders. The build gains one passing test. (The
+finished repo prints `PASS=19`: step 8 adds one more model with two tests.)
 
 **The point.** `AGENTS.md` holds facts that are always true. A skill holds a
 procedure you want done the same way every time, loaded only when it is needed.
@@ -490,23 +545,15 @@ teaches your agent how to use it.
 ### 8.2 Add the semantic layer and deploy
 
 ```
-Add a Lightdash semantic layer to visitor_value_by_channel: metrics for new
-visitors, revenue per new visitor at the first visit and over 90 days, and the
-share who buy within 90 days. Compute every ratio from sums, and hide the
-pre-computed ratio columns so nobody can average them. I also want a line
-chart of value building up at 0, 7, 30, 60 and 90 days, with the days on the
-x-axis: add whatever model that needs. Then deploy to a new Lightdash project
-called "Agentic Analytics Workshop".
+Add a Lightdash semantic layer to visitor_value_by_channel: new visitors,
+value per new visitor and the share who buy. Compute every ratio from sums.
+Then deploy it as a new project called "Agentic Analytics Workshop".
 ```
 
 **What you should see.** A `config: meta:` block on the model in
-[`models/marts/_marts.yml`](models/marts/_marts.yml), and a new model,
-[`visitor_value_curve`](models/marts/visitor_value_curve.sql), which turns the
-five revenue columns into five rows. Lightdash's explorer plots one row per
-point, so "days since the first visit" has to be a column before it can be an
-axis. dbt Charts and the Claude Dashboard did not need this, because their
-charts carry their own SQL or code. Then
-`Compiled 2 explores, SUCCESS=2 ERRORS=0` and a new project.
+[`models/marts/_marts.yml`](models/marts/_marts.yml), then a compile line
+ending in `ERRORS=0` and a new project. Check that the pre-computed ratio
+columns are hidden, so nobody can average them; ask for it if they are not.
 
 **Know what deploy does with credentials.** Creating a project copies the
 warehouse connection from `profiles.yml` into Lightdash. With the `gcloud`
@@ -517,20 +564,25 @@ a service account with read-only access instead.
 ### 8.3 Build the dashboard as code
 
 ```
-Build a Lightdash dashboard as code that answers the same question: three
-headline numbers, a line of the value by month of first visit, a stacked bar
-of first-visit and later value by first channel, a line per channel of value
-building up over 90 days, the share who buy by channel, and a table. Add a dashboard date filter on the month of first
-visit. Leave out channels with fewer than 1,000 new visitors. Lint it, upload
-it, then run each chart and check the numbers match the dbt Charts board.
+Build a Lightdash dashboard as code with the same charts as the dbt Charts
+board and a date filter. Lint it, upload it, then run each chart and check
+the numbers match the board.
 ```
 
-**What you should see.** Eight chart files and one dashboard file under
-[`lightdash/`](lightdash), `All Lightdash Code files are valid!` from the
-lint, and `Total charts created: 8, Total dashboards created: 1` from the
-upload. The dashboard has a "First visit between" filter at the top, which
-reaches the chart from the second model through a per-tile target. Running the charts returns the same figures as the other two
-dashboards: 554,755 new visitors, $1.66 over 90 days, 1.22% who buy.
+**What you should see.** Chart files and one dashboard file under
+[`lightdash/`](lightdash) (eight charts in the reference run),
+`All Lightdash Code files are valid!` from the lint, and a line from the
+upload counting the charts and the dashboard it created. Running the charts
+returns the same figures as the other two dashboards: 554,755 new visitors,
+$1.66 over 90 days, 1.22% who buy.
+
+One chart makes Lightdash work harder than the others: value building up over
+90 days. Its explorer plots one row per point, so "days since the first
+visit" has to be a column before it can be an axis. Claude adds a small model,
+[`visitor_value_curve`](models/marts/visitor_value_curve.sql), which turns the
+five revenue columns into five rows, and points the date filter at it through
+a per-tile target. dbt Charts and the Claude Dashboard did not need this,
+because their charts carry their own SQL or code.
 
 Open the dashboard in the browser, then click into a chart and choose
 "Explore from here": that is the part the other two tools do not offer.

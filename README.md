@@ -19,7 +19,7 @@ the prompts to paste and what to expect at each step.
 gcloud auth application-default login
 export GCP_PROJECT=your-project-id
 uv sync
-uv run dbt build     # PASS=18 WARN=0 ERROR=0
+uv run dbt build     # PASS=19 WARN=0 ERROR=0
 uv run dct serve     # the board, in your browser
 ```
 
